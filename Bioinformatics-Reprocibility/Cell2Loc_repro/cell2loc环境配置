@@ -1,0 +1,23 @@
+# 根据博客完成初步配置
+https://zhuanlan.zhihu.com/p/470114955
+
+# 解压文件夹下的cell2location.rar
+# cd到rar文件夹下
+python setup.py install
+
+# 有些包会提示没有，这些自己pip install就行了
+
+# 查看python配置（用来下载合适的cuda）
+python -m pip debug --verbose
+
+# 查看cuda配置
+nvidia-smi
+
+# 根据配置进入如下连接下载 torch torchaudio torchvision
+https://download.pytorch.org/whl/cu118
+
+# 在pycharm终端中cd到下载目录
+cd [下载目录]
+
+# 安装包
+pip install [下载下来的包]
