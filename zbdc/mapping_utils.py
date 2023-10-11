@@ -114,6 +114,7 @@ def map_cells_to_space(
     if not set(["training_genes", "overlap_genes"]).issubset(set(adata_sc.uns.keys())):
         raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
 
+    # Check if training_genes key exist/is valid in adatas.uns
     assert list(adata_sp.uns["training_genes"]) == list(adata_sc.uns["training_genes"])
 
     # get training_genes
@@ -151,24 +152,22 @@ def map_cells_to_space(
     if not S.any(axis=0).all() or not G.any(axis=0).all():
         raise ValueError("Genes with all zero values detected. Run `pp_adatas()`.")
 
-    d_str = density_prior
     d = None
     d_source = None
 
     if mode == "cells":
-        d = np.array(adata_sp.obs["uniform_density"])
-    elif mode == "clusters":
-        d_source = np.array(adata_sc.obs["cluster_label"])
+        d = np.array(adata_sp.obs["rna_count_based_density"])
+
 
     # Choose device
     device = torch.device(device)  # for gpu
 
     if verbose:
-        print_each = 100
+        print_each = 50
     else:
         print_each = None
 
-    if mode in ["cells", "clusters"]:
+    if mode in ["cells"]:
         hyperparameters = {
             "lambda_a": lambda_a,  # G term
             "lambda_d": lambda_d,  # density term
@@ -199,8 +198,6 @@ def map_cells_to_space(
         var=adata_sp[:, training_genes].obs.copy(),
     )
 
-    # Annotate cosine similarity of each training gene
-    G_predicted = adata_map.X.T @ S
 
 
     adata_map.uns["training_history"] = training_history

@@ -47,7 +47,6 @@ class Mapper:
         self.lambda_d = lambda_d
         self.lambda_r = lambda_r
         self.random_state = random_state
-        self.activation = torch.nn.Sigmoid()
         self._density_criterion = torch.nn.KLDivLoss(reduction="sum")
 
         if adata_map is None:
@@ -91,12 +90,12 @@ class Mapper:
         G_pred = torch.matmul(M_probs.t(), self.S)
         gv_term = self.lambda_a * cosine_similarity(G_pred, self.G, dim=1).mean()
         vg_term = self.lambda_a * cosine_similarity(G_pred, self.G, dim=0).mean()
-        res_term = self.lambda_r * (torch.log(M_probs) * M_probs).sum()
+        F_term = self.lambda_a * ((G_pred - self.G) ** 2).mean()
 
-        total_loss = -gv_term - vg_term + density_term - res_term
+        total_loss = -gv_term -vg_term + density_term
 
-        # total_loss = -vg_term - gv_term + density_term + bias_term
-        return total_loss, gv_term, vg_term, density_term, res_term
+        # total_loss = -vg_term - gv_term + density_term
+        return total_loss, gv_term, vg_term, density_term
 
     def train(self, num_epochs, learning_rate=0.1, print_each=50):
         """
