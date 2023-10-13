@@ -1,22 +1,21 @@
 """
 This module includes plotting utility functions.
 """
-import numpy as np
-import matplotlib.pyplot as plt
 import logging
-import seaborn as sns
-from scipy.stats import entropy
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import scanpy as sc
+import seaborn as sns
+from matplotlib.gridspec import GridSpec
 from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
+from scipy.stats import entropy
 
-from . import utils as ut
 from . import mapping_utils as mu
-
-import pandas as pd
-import logging
-import matplotlib as mpl
-from matplotlib.gridspec import GridSpec
+from . import utils as ut
 
 
 def q_value(data, perc):
@@ -592,7 +591,7 @@ def plot_annotation_entropy(adata_map, annotation="cell_type"):
     Utility function to plot entropy box plot by each annotation.
 
     Args:
-        adata_map (AnnData): cell-by-voxel tangram mapping result.
+        adata_map (AnnData): cell-by-voxel tg mapping result.
         annotation (str): Optional. Must be a column in `adata_map.obs`. Default is 'cell_type'.
 
     Returns:

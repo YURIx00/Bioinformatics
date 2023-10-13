@@ -592,7 +592,7 @@ def plot_annotation_entropy(adata_map, annotation="cell_type"):
     Utility function to plot entropy box plot by each annotation.
 
     Args:
-        adata_map (AnnData): cell-by-voxel tangram mapping result.
+        adata_map (AnnData): cell-by-voxel tg mapping result.
         annotation (str): Optional. Must be a column in `adata_map.obs`. Default is 'cell_type'.
 
     Returns:

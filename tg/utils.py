@@ -1,22 +1,21 @@
 """
     Utility functions to pre- and post-process data for Tangram.
 """
+import gzip
+import logging
+import pickle
+import warnings
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
-from collections import defaultdict
-import gzip
-import pickle
 import scanpy as sc
-from tqdm import tqdm
-from sklearn.model_selection import LeaveOneOut
+from sklearn.metrics import auc
 from sklearn.model_selection import KFold
+from sklearn.model_selection import LeaveOneOut
+from tqdm import tqdm
 
 from . import mapping_utils as mu
-
-import logging
-import warnings
-
-from sklearn.metrics import auc
 
 # import torch
 # from torch.nn.functional import cosine_similarity
@@ -171,7 +170,7 @@ def create_segment_cell_df(adata_sp):
 
     if "image_features" not in adata_sp.obsm.keys():
         raise ValueError(
-            "Missing parameter for tangram deconvolution. Run `sqidpy.im.calculate_image_features`."
+            "Missing parameter for tg deconvolution. Run `sqidpy.im.calculate_image_features`."
         )
 
     centroids = adata_sp.obsm["image_features"][["segmentation_centroid"]].copy()
@@ -232,7 +231,7 @@ def count_cell_annotations(
 
     if "image_features" not in adata_sp.obsm.keys():
         raise ValueError(
-            "Missing parameter for tangram deconvolution. Run `sqidpy.im.calculate_image_features`."
+            "Missing parameter for tg deconvolution. Run `sqidpy.im.calculate_image_features`."
         )
 
     if (
@@ -240,7 +239,7 @@ def count_cell_annotations(
         or "tangram_spot_centroids" not in adata_sp.obsm.keys()
     ):
         raise ValueError(
-            "Missing parameter for tangram deconvolution. Run `create_segment_cell_df`."
+            "Missing parameter for tg deconvolution. Run `create_segment_cell_df`."
         )
 
     xs = adata_sp.obsm["spatial"][:, 1]
@@ -304,7 +303,7 @@ def deconvolve_cell_annotations(adata_sp, filter_cell_annotation=None):
         "tangram_ct_count" not in adata_sp.obsm.keys()
         or "tangram_cell_segmentation" not in adata_sp.uns.keys()
     ):
-        raise ValueError("Missing tangram parameters. Run `count_cell_annotations`.")
+        raise ValueError("Missing tg parameters. Run `count_cell_annotations`.")
 
     segmentation_df = adata_sp.uns["tangram_cell_segmentation"]
 
@@ -396,11 +395,11 @@ def compare_spatial_geneexp(adata_ge, adata_sp, adata_sc=None, genes=None):
 
     # Check if training_genes/overlap_genes key exist/is valid in adatas.uns
     if not set(["training_genes", "overlap_genes"]).issubset(set(adata_sp.uns.keys())):
-        raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
+        raise ValueError("Missing tg parameters. Run `pp_adatas()`.")
 
     if not set(["training_genes", "overlap_genes"]).issubset(set(adata_ge.uns.keys())):
         raise ValueError(
-            "Missing tangram parameters. Use `project_genes()` to get adata_ge."
+            "Missing tg parameters. Use `project_genes()` to get adata_ge."
         )
 
     assert list(adata_sp.uns["overlap_genes"]) == list(adata_ge.uns["overlap_genes"])
@@ -439,7 +438,7 @@ def compare_spatial_geneexp(adata_ge, adata_sp, adata_sc=None, genes=None):
         if not set(["training_genes", "overlap_genes"]).issubset(
             set(adata_sc.uns.keys())
         ):
-            raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
+            raise ValueError("Missing tg parameters. Run `pp_adatas()`.")
 
         assert list(adata_sc.uns["overlap_genes"]) == list(
             adata_sp.uns["overlap_genes"]
@@ -480,10 +479,10 @@ def cv_data_gen(adata_sc, adata_sp, cv_mode="loo"):
 
     # Check if training_genes key exist/is valid in adatas.uns
     if "training_genes" not in adata_sc.uns.keys():
-        raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
+        raise ValueError("Missing tg parameters. Run `pp_adatas()`.")
 
     if "training_genes" not in adata_sp.uns.keys():
-        raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
+        raise ValueError("Missing tg parameters. Run `pp_adatas()`.")
 
     if not list(adata_sp.uns["training_genes"]) == list(adata_sc.uns["training_genes"]):
         raise ValueError(

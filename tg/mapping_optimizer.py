@@ -6,8 +6,9 @@ matrix M is returned.
 - MapperConstrained: optimizer with filtering (i.e., only a subset of single cells are mapped onto space).
 At the end, the learned mapping matrix M and the learned filter F are returned.
 """
-import numpy as np
 import logging
+
+import numpy as np
 import torch
 from torch.nn.functional import softmax, cosine_similarity
 

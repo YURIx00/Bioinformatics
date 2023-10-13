@@ -2,12 +2,12 @@
     Mapping helpers
 """
 
+import logging
+
 import numpy as np
 import pandas as pd
 import scanpy as sc
 import torch
-import logging
-
 from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
 
@@ -214,10 +214,10 @@ def map_cells_to_space(
 
     # Check if training_genes key exist/is valid in adatas.uns
     if not set(["training_genes", "overlap_genes"]).issubset(set(adata_sc.uns.keys())):
-        raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
+        raise ValueError("Missing tg parameters. Run `pp_adatas()`.")
 
     if not set(["training_genes", "overlap_genes"]).issubset(set(adata_sp.uns.keys())):
-        raise ValueError("Missing tangram parameters. Run `pp_adatas()`.")
+        raise ValueError("Missing tg parameters. Run `pp_adatas()`.")
 
     assert list(adata_sp.uns["training_genes"]) == list(adata_sc.uns["training_genes"])
 
