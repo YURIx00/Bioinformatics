@@ -88,14 +88,14 @@ class Mapper:
             density_term = None
 
         G_pred = torch.matmul(M_probs.t(), self.S)
-        gv_term = self.lambda_a * cosine_similarity(G_pred, self.G, dim=1).mean()
-        vg_term = self.lambda_a * cosine_similarity(G_pred, self.G, dim=0).mean()
-        F_term = self.lambda_a * ((G_pred - self.G) ** 2).mean()
+        # 将G_term通过激活函数将其范围限制在0-1之间
+        G_term = self.lambda_a * torch.sigmoid((torch.multiply(G_pred, self.G)).mean())
 
-        total_loss = -gv_term -vg_term + density_term
+
+        total_loss = -G_term + density_term
 
         # total_loss = -vg_term - gv_term + density_term
-        return total_loss, gv_term, vg_term, density_term
+        return total_loss, G_term, density_term
 
     def train(self, num_epochs, learning_rate=0.1, print_each=50):
         """
@@ -117,15 +117,14 @@ class Mapper:
         if print_each:
             logging.info(f"Printing scores every {print_each} epochs.")
 
-        keys = ["total loss", "gv_term", "vg_term", "density_term" "res_term"]
+        keys = ["total loss", "G_term", "density_term"]
         values = [[] for i in range(len(keys))]
         training_history = {key: value for key, value in zip(keys, values)}
         for t in range(num_epochs):
             run_loss = self._loss_fn()
 
             if print_each is None or t % print_each != 0:
-                print(f"Epoch {t}, loss = {run_loss[0].item()}, gv_term = {run_loss[1].item()}, vg_term = {run_loss[2].item()},"
-                      f" density term = {run_loss[3]}, res term = {run_loss[4].item()  if run_loss[4] is not None else None}")
+                print(f"Epoch {t}, loss = {run_loss[0].item()}, G_term = {run_loss[1].item()}, density_term = {run_loss[2].item()}")
             loss = run_loss[0]
 
             for i in range(len(keys)):
