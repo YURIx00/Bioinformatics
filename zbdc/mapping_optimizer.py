@@ -13,7 +13,8 @@ class Mapper:
             d_source=None,
             lambda_a=1,
             lambda_d=1,
-            lambda_r=1,
+            lambda_r=0,
+            print_epochs=100,
             device="cpu",
             adata_map=None,
             random_state=None,
@@ -31,6 +32,7 @@ class Mapper:
             adata_map (scanpy.AnnData): Optional. Mapping initial condition (for resuming previous mappings). Default is None.
             random_state (int): Optional. pass an int to reproduce training. Default is None.
         """
+        self.print_epochs = None
         self.device = device
         self.S = torch.tensor(S, device=self.device, dtype=torch.float32)
         self.G = torch.tensor(G, device=self.device, dtype=torch.float32)
@@ -45,7 +47,6 @@ class Mapper:
 
         self.lambda_a = lambda_a
         self.lambda_d = lambda_d
-        self.lambda_r = lambda_r
         self.random_state = random_state
         self._density_criterion = torch.nn.KLDivLoss(reduction="sum")
 
@@ -88,23 +89,24 @@ class Mapper:
             density_term = None
 
         G_pred = torch.matmul(M_probs.t(), self.S)
+
         # 将G_term通过激活函数将其范围限制在0-1之间
-        G_term = self.lambda_a * torch.sigmoid((torch.multiply(G_pred, self.G)).mean())
+        G_term = self.lambda_a * cosine_similarity(G_pred, self.G).mean()
 
 
         total_loss = -G_term + density_term
 
-        # total_loss = -vg_term - gv_term + density_term
+        # total_loss = -G_term + density_term
         return total_loss, G_term, density_term
 
-    def train(self, num_epochs, learning_rate=0.1, print_each=50):
+    def train(self, num_epochs, learning_rate=0.1, print_epochs=100):
         """
         Run the optimizer and returns the mapping outcome.
 
         Args:
             num_epochs (int): Number of epochs.
             learning_rate (float): Optional. Learning rate for the optimizer. Default is 0.1.
-            print_each (int): Optional. Prints the loss each print_each epochs. If None, the loss is never printed. Default is 100.
+            print_epochs (int): Optional. Prints the loss each print_each epochs. If None, the loss is never printed. Default is 100.
 
         Returns:
             output (ndarray): The optimized mapping matrix M (ndarray), with shape (number_cells, number_spots).
@@ -114,8 +116,8 @@ class Mapper:
             torch.manual_seed(seed=self.random_state)
         optimizer = torch.optim.Adam([self.M], lr=learning_rate)
 
-        if print_each:
-            logging.info(f"Printing scores every {print_each} epochs.")
+        if self.print_epochs:
+            logging.info(f"Printing scores every {self.print_epochs} epochs.")
 
         keys = ["total loss", "G_term", "density_term"]
         values = [[] for i in range(len(keys))]
@@ -123,7 +125,7 @@ class Mapper:
         for t in range(num_epochs):
             run_loss = self._loss_fn()
 
-            if print_each is None or t % print_each != 0:
+            if t % 100 != 0:
                 print(f"Epoch {t}, loss = {run_loss[0].item()}, G_term = {run_loss[1].item()}, density_term = {run_loss[2].item()}")
             loss = run_loss[0]
 

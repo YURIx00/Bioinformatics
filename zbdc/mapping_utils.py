@@ -79,7 +79,7 @@ def map_cells_to_space(
         lambda_d=1.0,
         lambda_r=0,
         random_state=None,
-        verbose=True,
+        print_epochs=100,
         density_prior=None,
 ):
     """
@@ -155,17 +155,31 @@ def map_cells_to_space(
     d = None
     d_source = None
 
+    if density_prior == "rna_count_based":
+        density_prior = adata_sp.obs["rna_count_based_density"]
+
+    # define density_prior if 'uniform' is passed to the density_prior argument:
+    elif density_prior == "uniform":
+        density_prior = adata_sp.obs["uniform_density"]
+
     if mode == "cells":
-        d = np.array(adata_sp.obs["rna_count_based_density"])
+        d = density_prior
+
+    if mode == "clusters":
+        d_source = np.array(adata_sc.obs["cluster_density"])
+
+    if mode in ["clusters", "constrained"]:
+        if density_prior is None:
+            d = adata_sp.obs["uniform_density"]
+            d_str = "uniform"
+        else:
+            d = density_prior
+        if lambda_d is None or lambda_d == 0:
+            lambda_d = 1
 
 
     # Choose device
     device = torch.device(device)  # for gpu
-
-    if verbose:
-        print_each = 50
-    else:
-        print_each = None
 
     if mode in ["cells"]:
         hyperparameters = {
@@ -188,7 +202,7 @@ def map_cells_to_space(
         # TODO `train` should return the loss function
 
         mapping_matrix, training_history = mapper.train(
-            learning_rate=learning_rate, num_epochs=num_epochs, print_each=print_each,
+            learning_rate=learning_rate, num_epochs=num_epochs, print_epochs=print_epochs,
         )
 
     logging.info("Saving results..")
@@ -198,7 +212,26 @@ def map_cells_to_space(
         var=adata_sp[:, training_genes].obs.copy(),
     )
 
+    # Annotate cosine similarity of each training gene
+    G_predicted = adata_map.X.T @ S
+    cos_sims = []
+    for v1, v2 in zip(G.T, G_predicted.T):
+        norm_sq = np.linalg.norm(v1) * np.linalg.norm(v2)
+        cos_sims.append((v1 @ v2) / norm_sq)
 
+    df_cs = pd.DataFrame(cos_sims, training_genes, columns=["train_score"])
+    df_cs = df_cs.sort_values(by="train_score", ascending=False)
+    adata_map.uns["train_genes_df"] = df_cs
+
+    # Annotate sparsity of each training genes
+    ut.annotate_gene_sparsity(adata_sc)
+    ut.annotate_gene_sparsity(adata_sp)
+    adata_map.uns["train_genes_df"]["sparsity_sc"] = adata_sc[:, training_genes].var.sparsity
+    adata_map.uns["train_genes_df"]["sparsity_sp"] = adata_sp[:, training_genes].var.sparsity
+    adata_map.uns["train_genes_df"]["sparsity_diff"] = (
+            adata_sp[:, training_genes].var.sparsity
+            - adata_sc[:, training_genes].var.sparsity
+    )
 
     adata_map.uns["training_history"] = training_history
 
