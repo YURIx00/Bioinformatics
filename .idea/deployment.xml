@@ -14,7 +14,11 @@
         <serverdata>
           <mappings>
             <mapping deploy="/home/zbdc/github" local="$PROJECT_DIR$" />
+            <mapping deploy="/home/zbdc/R" local="C:/Program Files/R" />
           </mappings>
+          <excludedPaths>
+            <excludedPath path="/home/zbdc/github/tangram_test.ipynb" />
+          </excludedPaths>
         </serverdata>
       </paths>
       <paths name="zbdc@192.168.82.14:22 password (5)">
